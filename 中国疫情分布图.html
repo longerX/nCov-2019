@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nCov-全国分布图</title>
+    <!-- 1. 引入echarts -->
+    <script src="./js/echarts.min.js"></script>
+    <script src="./js/china.js"></script>
+  </head>
+  <body>
+    <!-- 2. 定义dom容器 -->
+    <div id="container" style="width: 800px;height: 600px"></div>
+    <!-- 3. 将图标配置应用到容器中 -->
+    <script>
+      // 将图标实例化和容器关联
+      var myChart = echarts.init(document.querySelector('#container'))
+      // fetch xmlhttprequest
+      // fetchfetch(请求url)不需要引入任何的文件
+      fetch(`http://127.0.0.1:8066/api/data`)
+        .then(res => res.json()) // 把可读数据流转为json格式
+        .then(res => {
+          // console.log(res) // 获取到的疫情数据
+          var getListByCountryTypeService1 = res.getListByCountryTypeService1
+          // 将接口返回的数据进行处理 转为echarts认可的数据
+          var filterData = []
+          getListByCountryTypeService1.forEach(item => {
+            filterData.push({
+              name: item.provinceShortName,
+              value: item.confirmedCount,
+              deadCount: item.deadCount,
+              curedCount: item.curedCount
+            })
+          })
+          // console.log(filterData) // [{name: '湖北', value: 5556,deadCount: 6, curedCount: 4}, ...]
+          // 配置图标数据信息
+          myChart.setOption({
+            title: {
+              // 标题
+              text: 'nCov-全国实例疫情数据分布图',
+              subtext: '中国加油',
+              left: 'center',
+              top: 10
+            },
+            // 图表背景色
+            backgroundColor: '#f7f7f7',
+            visualMap: [
+              {
+                type: 'piecewise', // continuous连续的 piecewise分段
+                pieces: [
+                  { gt: 10000 }, // (10000, Infinity]
+                  { gt: 1000, lte: 9999 }, // (1000, 9999]
+                  { gt: 100, lte: 999 }, // (100, 999]
+                  { gt: 10, lte: 99 }, // (10, 99]
+                  { gt: 0, lte: 9 } // (0, 9]
+                ],
+                inRange: {
+                  color: ['#fdebcf', '#f59e83', '#e55a4e', '#cb2a2f', '#811c24']
+                }
+              }
+            ],
+            tooltip: {
+              // triggerOn: 'click',
+              formatter: function(params) {
+                // 提示框浮层内容格式器，支持字符串模板和回调函数两种形式
+                // console.log(params, 'formatter')
+                return `地区：${params.name}<br/>确诊：${params.value || 0}人<br/>治愈：${(params.data && params.data.curedCount) || 0}人<br/>死亡：${params.data?.deadCount || 0}人<br/>`
+              }
+            },
+            series: [
+              {
+                type: 'map', // 当前图表的类型
+                map: 'china', // 当前地图是中国地图
+                label: {
+                  // 覆盖物设置
+                  show: true
+                },
+                data: filterData
+              }
+            ]
+          })
+        })
+    </script>
+  </body>
+</html>
